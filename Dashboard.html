@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Estratégico | Consultora SAP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Chosen Palette: Slate & Amber -->
+    <!-- Application Structure Plan: A single-page application (SPA) with a top navigation bar to switch between dashboards (CEO, Comercial, Operaciones, Desarrollo, Administración). This dashboard-centric structure was chosen because it directly maps to the user's mental model of distinct functional areas, allowing for quick, targeted data exploration. The default view is the CEO dashboard, providing an immediate strategic overview, with the ability to drill down into departmental specifics. This is more intuitive and efficient for a leadership audience than a linear, scrolling report. -->
+    <!-- Visualization & Content Choices: 
+        - Goal: Synthesize & Overview (CEO) -> Radar Chart to compare departmental health across balanced metrics; Stat Cards for high-level KPIs. Justification: Provides a quick, holistic view of company performance. Library: Chart.js.
+        - Goal: Track Sales Progress (Comercial) -> Bar Chart (as Funnel) for pipeline stages, Line Chart for revenue trends, Donut Chart for CSAT. Justification: Visualizes the sales process flow, performance over time, and customer sentiment effectively. Library: Chart.js.
+        - Goal: Monitor Service Efficiency (Operaciones) -> Bar Charts for MTTR/MTTA, Gauge-style Donut for SLA compliance, Line Chart for ticket volume. Justification: Compares key efficiency metrics and tracks workload over time. Library: Chart.js.
+        - Goal: Assess Dev Quality & Innovation (Desarrollo) -> Line Chart for incidents, Bar Chart for on-time delivery. Justification: Tracks quality trends and project predictability. Library: Chart.js.
+        - Goal: Gauge Workforce Health (Administración) -> Bar Chart for eNPS, Line Chart for turnover. Justification: Clearly displays employee sentiment and retention trends. Library: Chart.js.
+        - OKRs are presented in interactive accordion sections to manage information density, allowing users to expand objectives to see specific key results and progress.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* slate-50 */
+        }
+        .nav-link {
+            transition: all 0.3s ease;
+            border-bottom: 2px solid transparent;
+        }
+        .nav-link.active {
+            border-bottom-color: #f59e0b; /* amber-500 */
+            color: #0f172a; /* slate-900 */
+        }
+        .nav-link:hover {
+            border-bottom-color: #fbbf24; /* amber-400 */
+            color: #1e293b; /* slate-800 */
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 350px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+                max-height: 400px;
+            }
+        }
+        .stat-card {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-out;
+        }
+    </style>
+</head>
+<body class="text-slate-700">
+
+    <header class="bg-white shadow-md sticky top-0 z-50">
+        <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex-shrink-0">
+                    <h1 class="text-xl font-bold text-slate-800">Dashboard Estratégico SAP</h1>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-4">
+                        <a href="#ceo" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-slate-600">CEO</a>
+                        <a href="#comercial" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-slate-600">Comercial</a>
+                        <a href="#operaciones" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-slate-600">Operaciones</a>
+                        <a href="#desarrollo" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-slate-600">Desarrollo</a>
+                        <a href="#administracion" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-slate-600">Administración</a>
+                    </div>
+                </div>
+                <div class="md:hidden">
+                     <select id="mobile-nav" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-amber-500 focus:ring-amber-500 sm:text-sm">
+                        <option value="ceo">CEO</option>
+                        <option value="comercial">Comercial</option>
+                        <option value="operaciones">Operaciones</option>
+                        <option value="desarrollo">Desarrollo</option>
+                        <option value="administracion">Administración</option>
+                    </select>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mx-auto p-4 sm:p-6 lg:p-8">
+        <!-- CEO Section -->
+        <section id="ceo" class="dashboard-section">
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold text-slate-800">Dashboard Unificado del CEO</h2>
+                <p class="mt-2 text-lg text-slate-600">Visión consolidada y de alto nivel para la toma de decisiones ejecutivas.</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="stat-card bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-sm font-medium text-slate-500">Salud Financiera</h3>
+                    <p class="mt-1 text-3xl font-semibold text-green-600">+18%</p>
+                    <p class="text-xs text-slate-500">Crecimiento Ingresos (YTD)</p>
+                </div>
+                <div class="stat-card bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-sm font-medium text-slate-500">Rendimiento Cliente</h3>
+                    <p class="mt-1 text-3xl font-semibold text-sky-600">4.6/5</p>
+                    <p class="text-xs text-slate-500">CSAT General</p>
+                </div>
+                <div class="stat-card bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-sm font-medium text-slate-500">Excelencia Operacional</h3>
+                    <p class="mt-1 text-3xl font-semibold text-amber-600">82%</p>
+                    <p class="text-xs text-slate-500">Utilización Facturable</p>
+                </div>
+                <div class="stat-card bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-sm font-medium text-slate-500">Talento e Innovación</h3>
+                    <p class="mt-1 text-3xl font-semibold text-red-600">-5%</p>
+                    <p class="text-xs text-slate-500">Rotación Voluntaria</p>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h3 class="text-lg font-semibold text-slate-800 mb-4 text-center">Balance Estratégico Interdepartamental</h3>
+                <p class="text-center text-sm text-slate-500 mb-4">Esta vista de radar compara el rendimiento normalizado de cada área en sus métricas más críticas, ofreciendo una perspectiva equilibrada de la salud organizacional. Un valor más alto indica un mejor rendimiento en la dimensión correspondiente.</p>
+                <div class="chart-container">
+                    <canvas id="ceoRadarChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Comercial Section -->
+        <section id="comercial" class="dashboard-section hidden">
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold text-slate-800">Dashboard Comercial</h2>
+                <p class="mt-2 text-lg text-slate-600">Gestión proactiva del embudo de ventas y mejora de la satisfacción del cliente.</p>
+            </div>
+             <div class="bg-white p-6 rounded-lg shadow mb-8">
+                <h3 class="text-lg font-semibold text-slate-800 mb-2">OKRs Estratégicos</h3>
+                <div class="space-y-4">
+                    <div class="accordion-item">
+                        <button class="accordion-header w-full text-left font-semibold text-slate-700 p-3 bg-slate-100 rounded-md hover:bg-slate-200 flex justify-between items-center">
+                            Acelerar la penetración en el mercado y asegurar nuevas cuentas estratégicas.
+                            <span>&#9660;</span>
+                        </button>
+                        <div class="accordion-content p-4 border-l-4 border-amber-500">
+                            <ul class="list-disc list-inside space-y-2 text-slate-600">
+                                <li><b>KR:</b> Aumentar leads calificados en un 25%. (Progreso: 65%)</li>
+                                <li><b>KR:</b> Asegurar 3 nuevos contratos de migración S/4HANA. (Progreso: 33%)</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <button class="accordion-header w-full text-left font-semibold text-slate-700 p-3 bg-slate-100 rounded-md hover:bg-slate-200 flex justify-between items-center">
+                            Mejorar la satisfacción del cliente y expandir ingresos recurrentes.
+                            <span>&#9660;</span>
+                        </button>
+                        <div class="accordion-content p-4 border-l-4 border-amber-500">
+                            <ul class="list-disc list-inside space-y-2 text-slate-600">
+                                <li><b>KR:</b> Mejorar CSAT a 90% para interacciones comerciales. (Progreso: 88%)</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-lg font-semibold text-slate-800 mb-4">Embudo de Ventas (Q2)</h3>
+                    <div class="chart-container h-80">
+                        <canvas id="comercialFunnelChart"></canvas>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-lg font-semibold text-slate-800 mb-4">Ingresos por Ventas (Últimos 6 meses)</h3>
+                    <div class="chart-container h-80">
+                        <canvas id="comercialRevenueChart"></canvas>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-lg font-semibold text-slate-800 mb-4">Satisfacción del Cliente (CSAT)</h3>
+                    <div class="chart-container h-80">
+                        <canvas id="comercialCsatChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Operaciones Section -->
+        <section id="operaciones" class="dashboard-section hidden">
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold text-slate-800">Dashboard de Operaciones (AMS)</h2>
+                <p class="mt-2 text-lg text-slate-600">Entrega de valor continuo y optimización de la calidad del servicio.</p>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow mb-8">
+                <h3 class="text-lg font-semibold text-slate-800 mb-2">OKRs Estratégicos</h3>
+                 <div class="space-y-4">
+                    <div class="accordion-item">
+                        <button class="accordion-header w-full text-left font-semibold text-slate-700 p-3 bg-slate-100 rounded-md hover:bg-slate-200 flex justify-between items-center">
+                            Alcanzar la excelencia de servicio líder en la industria.
+                             <span>&#9660;</span>
+                        </button>
+                        <div class="accordion-content p-4 border-l-4 border-amber-500">
+                            <ul class="list-disc list-inside space-y-2 text-slate-600">
+                                <li><b>KR:</b> Reducir MTTR para tickets de alta prioridad en 20%. (Progreso: 70%)</li>
+                                <li><b>KR:</b> Aumentar FTRR para incidentes críticos al 85%. (Progreso: 92%)</li>
+                            </ul>
+                        </div>
+                    </div>
+                     <div class="accordion-item">
+                        <button class="accordion-header w-full text-left font-semibold text-slate-700 p-3 bg-slate-100 rounded-md hover:bg-slate-200 flex justify-between items-center">
+                           Optimizar la utilización de recursos y la rentabilidad.
+                             <span>&#9660;</span>
+                        </button>
+                        <div class="accordion-content p-4 border-l-4 border-amber-500">
+                            <ul class="list-disc list-inside space-y-2 text-slate-600">
+                                <li><b>KR:</b> Aumentar tasa de utilización facturable al 80%. (Progreso: 102.5%)</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-lg font-semibold text-slate-800 mb-4">Tiempos de Respuesta (Horas)</h3>
+                    <div class="chart-container h-80">
+                        <canvas id="operacionesMttrChart"></canvas>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-lg font-semibold text-slate-800 mb-4">Cumplimiento de SLA</h3>
+                    <div class="chart-container h-80">
+                        <canvas id="operacionesSlaChart"></canvas>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-lg font-semibold text-slate-800 mb-4">Utilización Facturable por Equipo</h3>
+                    <div class="chart-container h-80">
+                        <canvas id="operacionesUtilizacionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Desarrollo Section -->
+        <section id="desarrollo" class="dashboard-section hidden">
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold text-slate-800">Dashboard de Desarrollo</h2>
+                <p class="mt-2 text-lg text-slate-600">Creación de soluciones SAP personalizadas, innovadoras y de alta calidad.</p>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow mb-8">
+                <h3 class="text-lg font-semibold text-slate-800 mb-2">OKRs Estratégicos</h3>
+                <div class="space-y-4">
+                    <div class="accordion-item">
+                        <button class="accordion-header w-full text-left font-semibold text-slate-700 p-3 bg-slate-100 rounded-md hover:bg-slate-200 flex justify-between items-center">
+                            Entregar soluciones innovadoras y de alta calidad.
+                             <span>&#9660;</span>
+                        </button>
+                        <div class="accordion-content p-4 border-l-4 border-amber-500">
+                            <ul class="list-disc list-inside space-y-2 text-slate-600">
+                                <li><b>KR:</b> Reducir incidentes de producción en 30%. (Progreso: 80%)</li>
+                                <li><b>KR:</b> Lograr tasa de entrega a tiempo del 95%. (Progreso: 100%)</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <button class="accordion-header w-full text-left font-semibold text-slate-700 p-3 bg-slate-100 rounded-md hover:bg-slate-200 flex justify-between items-center">
+                            Acelerar la adopción de tecnologías de vanguardia.
+                             <span>&#9660;</span>
+                        </button>
+                        <div class="accordion-content p-4 border-l-4 border-amber-500">
+                             <ul class="list-disc list-inside space-y-2 text-slate-600">
+                                <li><b>KR:</b> Integrar IA/ML en 2 nuevos aceleradores. (Progreso: 50%)</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                 <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-lg font-semibold text-slate-800 mb-4">Incidentes de Producción Post-Desarrollo</h3>
+                     <div class="chart-container h-80">
+                        <canvas id="desarrolloIncidentesChart"></canvas>
+                    </div>
+                </div>
+                 <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-lg font-semibold text-slate-800 mb-4">Tasa de Entrega a Tiempo de Proyectos</h3>
+                     <div class="chart-container h-80">
+                        <canvas id="desarrolloEntregaChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Administración Section -->
+        <section id="administracion" class="dashboard-section hidden">
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold text-slate-800">Dashboard de Administración</h2>
+                <p class="mt-2 text-lg text-slate-600">Empoderando a las personas y optimizando procesos internos.</p>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow mb-8">
+                 <h3 class="text-lg font-semibold text-slate-800 mb-2">OKRs Estratégicos</h3>
+                 <div class="space-y-4">
+                     <div class="accordion-item">
+                        <button class="accordion-header w-full text-left font-semibold text-slate-700 p-3 bg-slate-100 rounded-md hover:bg-slate-200 flex justify-between items-center">
+                            Cultivar una fuerza laboral comprometida y capacitada.
+                            <span>&#9660;</span>
+                        </button>
+                        <div class="accordion-content p-4 border-l-4 border-amber-500">
+                             <ul class="list-disc list-inside space-y-2 text-slate-600">
+                                <li><b>KR:</b> Aumentar eNPS del 75% al 90%. (Progreso: 45%)</li>
+                                <li><b>KR:</b> Reducir rotación voluntaria de alto rendimiento al 10%. (Progreso: 60%)</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <button class="accordion-header w-full text-left font-semibold text-slate-700 p-3 bg-slate-100 rounded-md hover:bg-slate-200 flex justify-between items-center">
+                            Optimizar la eficiencia administrativa.
+                            <span>&#9660;</span>
+                        </button>
+                        <div class="accordion-content p-4 border-l-4 border-amber-500">
+                             <ul class="list-disc list-inside space-y-2 text-slate-600">
+                                <li><b>KR:</b> Reducir tiempo de procesamiento de nóminas en 15%. (Progreso: 95%)</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                 <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-lg font-semibold text-slate-800 mb-4">Employee Net Promoter Score (eNPS)</h3>
+                     <div class="chart-container h-80">
+                        <canvas id="adminEnpsChart"></canvas>
+                    </div>
+                </div>
+                 <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-lg font-semibold text-slate-800 mb-4">Tasa de Rotación Voluntaria (%)</h3>
+                     <div class="chart-container h-80">
+                        <canvas id="adminRotacionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+    
+<script>
+    // --- Chart Data & Logic (Moved outside DOMContentLoaded for wider scope) ---
+    const chartColors = {
+        primary: 'rgb(59, 130, 246)',
+        secondary: 'rgb(245, 158, 11)',
+        tertiary: 'rgb(16, 185, 129)',
+        danger: 'rgb(239, 68, 68)',
+        light: 'rgb(203, 213, 225)',
+        primaryTransparent: 'rgba(59, 130, 246, 0.2)',
+        secondaryTransparent: 'rgba(245, 158, 11, 0.2)',
+    };
+
+document.addEventListener('DOMContentLoaded', () => {
+    const sections = document.querySelectorAll('.dashboard-section');
+    const navLinks = document.querySelectorAll('.nav-link');
+    const mobileNav = document.getElementById('mobile-nav');
+    const chartInstances = {};
+
+    function showSection(id) {
+        sections.forEach(section => {
+            if (section.id === id) {
+                section.classList.remove('hidden');
+            } else {
+                section.classList.add('hidden');
+            }
+        });
+
+        navLinks.forEach(link => {
+            if (link.hash === `#${id}`) {
+                link.classList.add('active');
+            } else {
+                link.classList.remove('active');
+            }
+        });
+        
+        mobileNav.value = id;
+        
+        // Lazy load charts
+        loadChart(id);
+        window.scrollTo(0, 0);
+    }
+
+    function handleNavigation(event) {
+        event.preventDefault();
+        const id = event.target.hash.substring(1);
+        showSection(id);
+        history.pushState(null, null, `#${id}`);
+    }
+
+    navLinks.forEach(link => link.addEventListener('click', handleNavigation));
+    
+    mobileNav.addEventListener('change', (event) => {
+        showSection(event.target.value);
+        history.pushState(null, null, `#${event.target.value}`);
+    });
+
+    window.addEventListener('popstate', () => {
+        const hash = window.location.hash.substring(1) || 'ceo';
+        showSection(hash);
+    });
+    
+    // Accordion functionality
+    const accordionHeaders = document.querySelectorAll('.accordion-header');
+    accordionHeaders.forEach(header => {
+        header.addEventListener('click', () => {
+            const content = header.nextElementSibling;
+            const item = header.parentElement;
+            
+            item.classList.toggle('open');
+            
+            if (content.style.maxHeight) {
+                content.style.maxHeight = null;
+                header.querySelector('span').style.transform = 'rotate(0deg)';
+            } else {
+                content.style.maxHeight = content.scrollHeight + "px";
+                header.querySelector('span').style.transform = 'rotate(180deg)';
+            }
+        });
+    });
+
+    // Initial load
+    const initialHash = window.location.hash.substring(1) || 'ceo';
+    showSection(initialHash);
+
+
+    function createChart(ctx, config) {
+        const existingChart = chartInstances[ctx.canvas.id];
+        if (existingChart) {
+            existingChart.destroy();
+        }
+        chartInstances[ctx.canvas.id] = new Chart(ctx, config);
+    }
+
+    function loadChart(id) {
+        switch(id) {
+            case 'ceo':
+                loadCeoCharts();
+                break;
+            case 'comercial':
+                loadComercialCharts();
+                break;
+            case 'operaciones':
+                loadOperacionesCharts();
+                break;
+            case 'desarrollo':
+                loadDesarrolloCharts();
+                break;
+            case 'administracion':
+                loadAdminCharts();
+                break;
+        }
+    }
+    
+    function loadCeoCharts() {
+        const ceoRadarCtx = document.getElementById('ceoRadarChart')?.getContext('2d');
+        if (ceoRadarCtx) {
+            createChart(ceoRadarCtx, {
+                type: 'radar',
+                data: {
+                    labels: ['Financiero', 'Clientes', 'Operaciones', 'Desarrollo', 'Talento'],
+                    datasets: [{
+                        label: 'Rendimiento Actual',
+                        data: [85, 92, 82, 88, 75],
+                        fill: true,
+                        backgroundColor: chartColors.primaryTransparent,
+                        borderColor: chartColors.primary,
+                        pointBackgroundColor: chartColors.primary,
+                    }, {
+                        label: 'Objetivo',
+                        data: [90, 95, 85, 90, 85],
+                        fill: true,
+                        backgroundColor: 'rgba(203, 213, 225, 0.2)',
+                        borderColor: 'rgb(100, 116, 139)',
+                        pointBackgroundColor: 'rgb(100, 116, 139)',
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            angleLines: { display: false },
+                            suggestedMin: 0,
+                            suggestedMax: 100
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+    function loadComercialCharts() {
+        const funnelCtx = document.getElementById('comercialFunnelChart')?.getContext('2d');
+        if (funnelCtx) {
+            createChart(funnelCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Leads', 'Oportunidades', 'Propuestas', 'Ganados'],
+                    datasets: [{
+                        label: 'Volumen',
+                        data: [1200, 450, 150, 60],
+                        backgroundColor: [
+                            'rgba(59, 130, 246, 0.7)',
+                            'rgba(34, 197, 94, 0.7)',
+                            'rgba(245, 158, 11, 0.7)',
+                            'rgba(239, 68, 68, 0.7)',
+                        ],
+                        borderColor: [
+                            'rgb(59, 130, 246)',
+                            'rgb(34, 197, 94)',
+                            'rgb(245, 158, 11)',
+                            'rgb(239, 68, 68)',
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+        
+        const revenueCtx = document.getElementById('comercialRevenueChart')?.getContext('2d');
+        if (revenueCtx) {
+            createChart(revenueCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio'],
+                    datasets: [{
+                        label: 'Ingresos (Miles USD)',
+                        data: [250, 270, 310, 290, 350, 410],
+                        fill: true,
+                        borderColor: chartColors.primary,
+                        backgroundColor: chartColors.primaryTransparent,
+                        tension: 0.3
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+
+        const csatCtx = document.getElementById('comercialCsatChart')?.getContext('2d');
+        if (csatCtx) {
+            createChart(csatCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Satisfecho', 'Neutral', 'Insatisfecho'],
+                    datasets: [{
+                        label: 'CSAT',
+                        data: [88, 9, 3],
+                        backgroundColor: [chartColors.tertiary, chartColors.secondary, chartColors.danger],
+                        hoverOffset: 4
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+    }
+
+    function loadOperacionesCharts() {
+        const mttrCtx = document.getElementById('operacionesMttrChart')?.getContext('2d');
+        if (mttrCtx) {
+            createChart(mttrCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Prioridad Alta', 'Prioridad Media', 'Prioridad Baja'],
+                    datasets: [{
+                        label: 'MTTA (horas)',
+                        data: [0.8, 2.5, 5],
+                        backgroundColor: chartColors.light,
+                    }, {
+                        label: 'MTTR (horas)',
+                        data: [4, 12, 24],
+                        backgroundColor: chartColors.primary,
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+        
+        const slaCtx = document.getElementById('operacionesSlaChart')?.getContext('2d');
+        if (slaCtx) {
+            createChart(slaCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Dentro de SLA', 'Fuera de SLA'],
+                    datasets: [{
+                        label: 'Cumplimiento',
+                        data: [98.5, 1.5],
+                        backgroundColor: [chartColors.tertiary, chartColors.danger],
+                        circumference: 180,
+                        rotation: 270,
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, cutout: '70%' }
+            });
+        }
+
+        const utilizacionCtx = document.getElementById('operacionesUtilizacionChart')?.getContext('2d');
+        if(utilizacionCtx) {
+             createChart(utilizacionCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Equipo A', 'Equipo B', 'Equipo C'],
+                    datasets: [{
+                        label: 'Utilización Facturable (%)',
+                        data: [85, 78, 91],
+                        backgroundColor: chartColors.secondary,
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    scales: { y: { suggestedMin: 0, suggestedMax: 100 } }
+                }
+            });
+        }
+    }
+    
+    function loadDesarrolloCharts() {
+        const incidentesCtx = document.getElementById('desarrolloIncidentesChart')?.getContext('2d');
+        if (incidentesCtx) {
+            createChart(incidentesCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio'],
+                    datasets: [{
+                        label: 'Incidentes Críticos',
+                        data: [12, 10, 11, 7, 5, 3],
+                        borderColor: chartColors.danger,
+                        tension: 0.3
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+        
+        const entregaCtx = document.getElementById('desarrolloEntregaChart')?.getContext('2d');
+        if (entregaCtx) {
+            createChart(entregaCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Q1', 'Q2', 'Q3', 'Q4'],
+                    datasets: [{
+                        label: 'A tiempo (%)',
+                        data: [92, 95, 94, 98],
+                        backgroundColor: chartColors.tertiary,
+                        
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: {y: {suggestedMin: 80, suggestedMax: 100}} }
+            });
+        }
+    }
+    
+    function loadAdminCharts() {
+        const enpsCtx = document.getElementById('adminEnpsChart')?.getContext('2d');
+        if (enpsCtx) {
+            createChart(enpsCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Promotores', 'Pasivos', 'Detractores'],
+                    datasets: [{
+                        label: 'eNPS (Nº Empleados)',
+                        data: [150, 80, 20],
+                        backgroundColor: [chartColors.tertiary, chartColors.secondary, chartColors.danger],
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+        
+        const rotacionCtx = document.getElementById('adminRotacionChart')?.getContext('2d');
+        if (rotacionCtx) {
+            createChart(rotacionCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Q3 2024', 'Q4 2024', 'Q1 2025', 'Q2 2025'],
+                    datasets: [{
+                        label: 'Tasa de Rotación Trimestral',
+                        data: [4.5, 4.2, 3.8, 3.5],
+                        fill: false,
+                        borderColor: chartColors.primary,
+                        tension: 0.1
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+    }
+});
+</script>
+</body>
+</html>
